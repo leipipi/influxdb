@@ -101,6 +101,7 @@ func (p *SeriesPartition) Open() error {
 }
 
 func (p *SeriesPartition) openSegments() error {
+	//开启所有segment
 	fis, err := ioutil.ReadDir(p.path)
 	if err != nil {
 		return err
@@ -204,6 +205,7 @@ func (p *SeriesPartition) CreateSeriesListIfNotExists(keys [][]byte, keyPartitio
 		return ErrSeriesPartitionClosed
 	}
 	for i := range keys {
+		//不是这个partition的
 		if keyPartitionIDs[i] != p.id {
 			continue
 		}

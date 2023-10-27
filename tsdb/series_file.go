@@ -288,6 +288,7 @@ func (f *SeriesFile) SeriesIDPartition(id uint64) *SeriesPartition {
 	return f.partitions[partitionID]
 }
 
+// partitionIDs[i]表示第i个key写到那个series partition
 func (f *SeriesFile) SeriesKeysPartitionIDs(keys [][]byte) []int {
 	partitionIDs := make([]int, len(keys))
 	for i := range keys {

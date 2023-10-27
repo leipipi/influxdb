@@ -1419,7 +1419,7 @@ func (sgi *ShardGroupInfo) unmarshal(pb *internal.ShardGroupInfo) {
 // ShardInfo represents metadata about a shard.
 type ShardInfo struct {
 	ID     uint64
-	Owners []ShardOwner
+	Owners []ShardOwner 
 }
 
 // OwnedBy determines whether the shard's owner IDs includes nodeID.

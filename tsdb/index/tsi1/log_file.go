@@ -46,6 +46,7 @@ const defaultLogFileBufferSize = 4096
 const indexFileBufferSize = 1 << 17 // 128K
 
 // LogFile represents an on-disk write-ahead log file.
+// 倒排索引的WAL
 type LogFile struct {
 	mu         sync.RWMutex
 	wg         sync.WaitGroup // ref count
@@ -66,6 +67,7 @@ type LogFile struct {
 	seriesIDSet, tombstoneSeriesIDSet *tsdb.SeriesIDSet
 
 	// In-memory index.
+	//map[string]*logMeasurement
 	mms logMeasurements
 
 	// Filepath to the log file.
@@ -1238,6 +1240,7 @@ func (mms *logMeasurements) bytes() int {
 	return b
 }
 
+// measurement->tagk->tagv->seriesId
 type logMeasurement struct {
 	name      []byte
 	tagSet    map[string]logTagKey

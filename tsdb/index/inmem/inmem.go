@@ -71,6 +71,7 @@ func NewIndex(database string, sfile *tsdb.SeriesFile) *Index {
 		series:       make(map[string]*series),
 	}
 
+	//hyperloglog基数统计
 	index.seriesSketch = hll.NewDefaultPlus()
 	index.seriesTSSketch = hll.NewDefaultPlus()
 	index.measurementsSketch = hll.NewDefaultPlus()
@@ -198,7 +199,7 @@ func (i *Index) CreateSeriesListIfNotExists(seriesIDSet *tsdb.SeriesIDSet, measu
 		}
 		i.mu.RUnlock()
 	}
-
+	//委托给series file
 	seriesIDs, err := i.sfile.CreateSeriesListIfNotExists(names, tagsSlice)
 	if err != nil {
 		return err
@@ -235,6 +236,7 @@ func (i *Index) CreateSeriesListIfNotExists(seriesIDSet *tsdb.SeriesIDSet, measu
 	// get or create the measurement index
 	mms := make([]*measurement, len(names))
 	for j, name := range names {
+		//创建index对应的measurement
 		mms[j] = i.CreateMeasurementIndexIfNotExists(name)
 	}
 
@@ -320,6 +322,7 @@ func (i *Index) CreateMeasurementIndexIfNotExists(name []byte) *measurement {
 	m = i.measurements[string(name)]
 	if m == nil {
 		m = newMeasurement(i.database, string(name))
+		//name-->*measurement
 		i.measurements[string(name)] = m
 
 		// Add the measurement to the measurements sketch.
@@ -1044,7 +1047,7 @@ func (i *Index) DiskSizeBytes() int64 { return 0 }
 // and garbage collected.
 func (i *Index) Rebuild() {
 	// Only allow one rebuild at a time.  This will cause all subsequent rebuilds
-	// to queue.  The measurement rebuild is idempotent and will not be rebuilt if
+	// to queue.  The measurement rebuild is idempotent（幂等的） and will not be rebuilt if
 	// it does not need to be.
 	i.rebuildQueue.Lock()
 	defer i.rebuildQueue.Unlock()

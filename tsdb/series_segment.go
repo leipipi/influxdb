@@ -26,7 +26,7 @@ const (
 	SeriesEntryFlagSize   = 1
 	SeriesEntryHeaderSize = 1 + 8 // flag + id
 
-	SeriesEntryInsertFlag    = 0x01
+	SeriesEntryInsertFlag    = 0x01 //要么插入 要么删除
 	SeriesEntryTombstoneFlag = 0x02
 )
 
@@ -38,7 +38,8 @@ var (
 
 // SeriesSegment represents a log of series entries.
 type SeriesSegment struct {
-	id   uint16
+	id uint16
+	//series segment file 文件路径
 	path string
 
 	data []byte        // mmap file
@@ -192,7 +193,7 @@ func (s *SeriesSegment) WriteLogEntry(data []byte) (offset int64, err error) {
 	if !s.CanWrite(data) {
 		return 0, ErrSeriesSegmentNotWritable
 	}
-
+	//计算这个segement entry的偏移量，offset = series segment id + 内部offset
 	offset = JoinSeriesOffset(s.id, s.size)
 	if _, err := s.w.Write(data); err != nil {
 		return 0, err
@@ -239,6 +240,7 @@ func (s *SeriesSegment) MaxSeriesID() uint64 {
 }
 
 // ForEachEntry executes fn for every entry in the segment.
+// 对每个entry做fn操作
 func (s *SeriesSegment) ForEachEntry(fn func(flag uint8, id uint64, offset int64, key []byte) error) error {
 	for pos := uint32(SeriesSegmentHeaderSize); pos < uint32(len(s.data)); {
 		flag, id, key, sz := ReadSeriesEntry(s.data[pos:])
@@ -278,10 +280,11 @@ func (s *SeriesSegment) CompactToPath(path string, index *SeriesIndex) error {
 	}
 
 	// Iterate through the segment and write any entries to a new segment
-	// that exist in the index.
+	// that exist in the index.核心部分
 	var buf []byte
 	if err = s.ForEachEntry(func(flag uint8, id uint64, _ int64, key []byte) error {
 		if index.IsDeleted(id) {
+			//这个entry被删除了
 			return nil // series id has been deleted from index
 		} else if flag == SeriesEntryTombstoneFlag {
 			return fmt.Errorf("[series id %d]: tombstone entry but exists in index", id)
@@ -427,6 +430,7 @@ func ReadSeriesEntry(data []byte) (flag uint8, id uint64, key []byte, sz int64) 
 	return flag, id, key, int64(SeriesEntryHeaderSize + len(key))
 }
 
+// flag+id+key
 func AppendSeriesEntry(dst []byte, flag uint8, id uint64, key []byte) []byte {
 	buf := make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, id)

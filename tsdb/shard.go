@@ -126,18 +126,18 @@ func (e PartialWriteError) Error() string {
 // Data can be split across many shards. The query engine in TSDB is responsible
 // for combining the output of many shards into a single query result.
 type Shard struct {
-	path    string
+	path    string //tsm file所在位置
 	walPath string
 	id      uint64
 
-	database        string
+	database        string //数据库名
 	retentionPolicy string
 
 	sfile   *SeriesFile
 	options EngineOptions
 
 	mu      sync.RWMutex
-	_engine Engine
+	_engine Engine //tsm引擎
 	index   Index
 	enabled bool
 
@@ -314,6 +314,7 @@ func (s *Shard) Open() error {
 
 		// Initialize underlying index.
 		ipath := filepath.Join(s.path, "index")
+		//构建这个shard的索引
 		idx, err := NewIndex(s.id, s.database, ipath, seriesIDSet, s.sfile, s.options)
 		if err != nil {
 			return err
@@ -514,7 +515,6 @@ const (
 // will store points written stats into the int64 pointer associated with
 // StatPointsWritten and the number of values written in the int64 pointer
 // stored in the StatValuesWritten context values.
-//
 func (s *Shard) WritePointsWithContext(ctx context.Context, points []models.Point) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

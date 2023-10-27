@@ -44,8 +44,8 @@ type SeriesIndex struct {
 	maxOffset   int64
 
 	data         []byte // mmap data
-	keyIDData    []byte // key/id mmap data
-	idOffsetData []byte // id/offset mmap data
+	keyIDData    []byte // key/id mmap data   serieskey-->seriesid
+	idOffsetData []byte // id/offset mmap data  seriesid-->offset
 
 	// In-memory data since rebuild.
 	keyIDMap    *rhh.HashMap
@@ -121,6 +121,7 @@ func (idx *SeriesIndex) Recover(segments []*SeriesSegment) error {
 		}
 
 		if err := segment.ForEachEntry(func(flag uint8, id uint64, offset int64, key []byte) error {
+			//小于maxsegmentid 不重建
 			if offset <= idx.maxOffset {
 				return nil
 			}
@@ -215,6 +216,7 @@ func (idx *SeriesIndex) FindIDBySeriesKey(segments []*SeriesSegment, key []byte)
 	}
 }
 
+// measurement 和 tags 找 seriesid
 func (idx *SeriesIndex) FindIDByNameTags(segments []*SeriesSegment, name []byte, tags models.Tags, buf []byte) uint64 {
 	id := idx.FindIDBySeriesKey(segments, AppendSeriesKey(buf[:0], name, tags))
 	if _, ok := idx.tombstones[id]; ok {
@@ -237,6 +239,7 @@ func (idx *SeriesIndex) FindIDListByNameTags(segments []*SeriesSegment, names []
 }
 
 func (idx *SeriesIndex) FindOffsetByID(id uint64) int64 {
+	// 先在内存中寻找
 	if offset := idx.idOffsetMap[id]; offset != 0 {
 		return offset
 	} else if len(idx.data) == 0 {

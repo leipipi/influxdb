@@ -333,6 +333,7 @@ func (w *PointsWriter) WritePointsPrivilegedWithContext(ctx context.Context, dat
 	// Write each shard in it's own goroutine and return as soon as one fails.
 	ch := make(chan error, len(shardMappings.Points))
 	for shardID, points := range shardMappings.Points {
+		// 每个shard一个goroutine并发写入，然后把写入操作委托给writeToShardWithContext
 		go func(ctx context.Context, shard *meta.ShardInfo, database, retentionPolicy string, points []models.Point) {
 			var numPoints, numValues int64
 			ctx = context.WithValue(ctx, tsdb.StatPointsWritten, &numPoints)
